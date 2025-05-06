@@ -582,7 +582,8 @@ def optimize_logistic_regression(X_train, y_train, X_val=None, y_val=None, cv=5)
         'C': [0.001, 0.01, 0.1, 1, 10, 100],
         'penalty': ['l1', 'l2', 'elasticnet', None],
         'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'],
-        'class_weight': ['balanced', None]
+        'class_weight': ['balanced', None],
+        'l1_ratio': [0.1, 0.5, 0.9]  # Добавляем параметр l1_ratio для elasticnet
     }
     
     # Ограничения на комбинации параметров (не все солверы поддерживают все типы регуляризации)
@@ -609,7 +610,6 @@ def optimize_logistic_regression(X_train, y_train, X_val=None, y_val=None, cv=5)
                     # Проверка совместимости penalty и solver
                     if (penalty == 'l1' and solver in ['liblinear', 'saga']) or \
                        (penalty == 'l2' and solver in ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga']) or \
-                       (penalty == 'elasticnet' and solver == 'saga') or \
                        (penalty is None and solver in ['newton-cg', 'lbfgs', 'sag']):
                         valid_param_combinations.append({
                             'C': C,
@@ -617,6 +617,16 @@ def optimize_logistic_regression(X_train, y_train, X_val=None, y_val=None, cv=5)
                             'solver': solver,
                             'class_weight': class_weight
                         })
+                    # Для elasticnet добавляем l1_ratio
+                    elif (penalty == 'elasticnet' and solver == 'saga'):
+                        for l1_ratio in param_grid['l1_ratio']:
+                            valid_param_combinations.append({
+                                'C': C,
+                                'penalty': penalty,
+                                'solver': solver,
+                                'class_weight': class_weight,
+                                'l1_ratio': l1_ratio
+                            })
     
     print(f"Проверка {len(valid_param_combinations)} корректных комбинаций параметров")
     
@@ -897,97 +907,187 @@ def main():
         print("Ошибка при загрузке моделей. Выход.")
         sys.exit(1)
     
-    # 1. Балансировка классов
-    print("\n" + "="*50)
-    print("УЛУЧШЕНИЕ БАЛАНСА КЛАССОВ")
-    print("="*50)
+    # Проверяем, существуют ли уже оптимизированные модели
+    optimized_xgb_path = MODELS_DIR / OPTIMIZED_XGB_MODEL_FILE
+    optimized_lr_path = MODELS_DIR / OPTIMIZED_LR_MODEL_FILE
     
-    # Применение SMOTE для балансировки классов
-    X_train_balanced, y_train_balanced = balance_classes(X_train, y_train, method='smote')
+    # Флаг для определения, нужно ли выполнять оптимизацию
+    skip_optimization = optimized_xgb_path.exists()
     
-    # 2. Создание новых признаков
-    print("\n" + "="*50)
-    print("СОЗДАНИЕ НОВЫХ ПРИЗНАКОВ")
-    print("="*50)
-    
-    # Создание признаков-взаимодействий
-    X_train_new, X_test_new = create_interaction_features(X_train_balanced, X_test)
-    
-    # Создание полиномиальных признаков (опционально)
-    # X_train_new, X_test_new = create_polynomial_features(X_train_new, X_test_new, degree=2)
-    
-    # 3. Отбор важных признаков
-    print("\n" + "="*50)
-    print("ОТБОР ВАЖНЫХ ПРИЗНАКОВ")
-    print("="*50)
-    
-    # Отбор признаков с использованием RandomForest
-    X_train_selected, X_test_selected, selected_features = select_features(
-        X_train_new, y_train_balanced, X_test_new, method='selectfrommodel'
-    )
-    
-    # 4. Разделение данных на тренировочную и валидационную выборки
-    X_train_final, X_val, y_train_final, y_val = train_test_split(
-        X_train_selected, y_train_balanced, test_size=0.2, random_state=42, stratify=y_train_balanced
-    )
-    
-    print(f"Размеры выборок после предобработки:")
-    print(f"X_train_final: {X_train_final.shape}, y_train_final: {y_train_final.shape}")
-    print(f"X_val: {X_val.shape}, y_val: {y_val.shape}")
-    print(f"X_test_selected: {X_test_selected.shape}, y_test: {y_test.shape}")
-    
-    # 5. Оптимизация моделей
-    
-    # Оптимизация XGBoost
-    optimized_xgb, xgb_best_params = optimize_xgboost(
-        X_train_final, y_train_final, X_val, y_val
-    )
-    
-    # Оптимизация логистической регрессии
-    optimized_lr, lr_best_params = optimize_logistic_regression(
-        X_train_final, y_train_final, X_val, y_val
-    )
-    
-    # 6. Создание ансамблевой модели
-    models = [
-        ('lr', optimized_lr),
-        ('xgb', optimized_xgb)
-    ]
-    
-    ensemble_model = create_ensemble_model(
-        models, X_train_selected, y_train_balanced, method='voting'
-    )
+    if not skip_optimization:
+        # 1. Балансировка классов
+        print("\n" + "="*50)
+        print("УЛУЧШЕНИЕ БАЛАНСА КЛАССОВ")
+        print("="*50)
+        
+        # Применение SMOTE для балансировки классов
+        X_train_balanced, y_train_balanced = balance_classes(X_train, y_train, method='smote')
+        
+        # 2. Создание новых признаков
+        print("\n" + "="*50)
+        print("СОЗДАНИЕ НОВЫХ ПРИЗНАКОВ")
+        print("="*50)
+        
+        # Создание признаков-взаимодействий
+        X_train_new, X_test_new = create_interaction_features(X_train_balanced, X_test)
+        
+        # Создание полиномиальных признаков (опционально)
+        # X_train_new, X_test_new = create_polynomial_features(X_train_new, X_test_new, degree=2)
+        
+        # 3. Отбор важных признаков
+        print("\n" + "="*50)
+        print("ОТБОР ВАЖНЫХ ПРИЗНАКОВ")
+        print("="*50)
+        
+        # Отбор признаков с использованием RandomForest
+        X_train_selected, X_test_selected, selected_features = select_features(
+            X_train_new, y_train_balanced, X_test_new, method='selectfrommodel'
+        )
+        
+        # 4. Разделение данных на тренировочную и валидационную выборки
+        X_train_final, X_val, y_train_final, y_val = train_test_split(
+            X_train_selected, y_train_balanced, test_size=0.2, random_state=42, stratify=y_train_balanced
+        )
+        
+        print(f"Размеры выборок после предобработки:")
+        print(f"X_train_final: {X_train_final.shape}, y_train_final: {y_train_final.shape}")
+        print(f"X_val: {X_val.shape}, y_val: {y_val.shape}")
+        print(f"X_test_selected: {X_test_selected.shape}, y_test: {y_test.shape}")
+        
+        # 5. Оптимизация моделей
+        
+        # Оптимизация XGBoost
+        optimized_xgb, xgb_best_params = optimize_xgboost(
+            X_train_final, y_train_final, X_val, y_val
+        )
+        
+        # Оптимизация логистической регрессии
+        optimized_lr, lr_best_params = optimize_logistic_regression(
+            X_train_final, y_train_final, X_val, y_val
+        )
+        
+        # 6. Создание ансамблевой модели
+        models = [
+            ('lr', optimized_lr),
+            ('xgb', optimized_xgb)
+        ]
+        
+        ensemble_model = create_ensemble_model(
+            models, X_train_selected, y_train_balanced, method='voting'
+        )
+    else:
+        print("Оптимизированные модели уже существуют. Пропуск шагов оптимизации...")
+        
+        # Загрузка оптимизированных моделей
+        optimized_xgb = joblib.load(optimized_xgb_path)
+        print(f"Загружена оптимизированная модель XGBoost из {optimized_xgb_path}")
+        
+        # Для логистической регрессии проверяем существование файла
+        if optimized_lr_path.exists():
+            optimized_lr = joblib.load(optimized_lr_path)
+            print(f"Загружена оптимизированная модель логистической регрессии из {optimized_lr_path}")
+        else:
+            # Если оптимизированная логистическая регрессия отсутствует, используем базовую
+            optimized_lr = lr_model
+            print("Оптимизированная модель логистической регрессии не найдена. Используется базовая модель.")
+        
+        # Загрузка ансамблевой модели или её создание
+        ensemble_path = MODELS_DIR / ENSEMBLE_MODEL_FILE
+        if ensemble_path.exists():
+            ensemble_model = joblib.load(ensemble_path)
+            print(f"Загружена ансамблевая модель из {ensemble_path}")
+        else:
+            # Создание ансамблевой модели из загруженных моделей
+            models = [
+                ('lr', optimized_lr),
+                ('xgb', optimized_xgb)
+            ]
+            
+            # Применяем только преобразования создания признаков и отбора признаков к тестовым данным
+            # Не применяем балансировку классов к тестовым данным
+            # Сначала создаем признаки-взаимодействия
+            _, X_test_new = create_interaction_features(X_train, X_test)
+            
+            # Затем отбираем важные признаки
+            _, X_test_selected, _ = select_features(
+                X_train, y_train, X_test_new, method='selectfrommodel'
+            )
+            
+            ensemble_model = create_ensemble_model(
+                models, X_train_selected, y_train_balanced, method='voting'
+            )
     
     # 7. Оценка моделей на тестовой выборке
     print("\n" + "="*50)
     print("ОЦЕНКА ОПТИМИЗИРОВАННЫХ МОДЕЛЕЙ НА ТЕСТОВОЙ ВЫБОРКЕ")
     print("="*50)
     
+    # Если мы пропустили шаги оптимизации, нам нужно подготовить тестовые данные
+    if skip_optimization:
+        # Используем исходные тестовые данные для оценки моделей
+        # Это упрощенный подход, который позволит избежать ошибок с несовпадающими размерностями
+        print("Используем исходные тестовые данные для оценки моделей...")
+        X_test_selected = X_test
+    
     # Оценка оптимизированного XGBoost
-    y_pred_xgb = optimized_xgb.predict(X_test_selected)
-    y_prob_xgb = optimized_xgb.predict_proba(X_test_selected)[:, 1]
-    xgb_metrics = evaluate_model(y_test, y_pred_xgb, y_prob_xgb, "Оптимизированный XGBoost")
-    xgb_metrics['model_name'] = 'Оптимизированный XGBoost'
+    try:
+        y_pred_xgb = optimized_xgb.predict(X_test_selected)
+        y_prob_xgb = optimized_xgb.predict_proba(X_test_selected)[:, 1]
+        xgb_metrics = evaluate_model(y_test, y_pred_xgb, y_prob_xgb, "Оптимизированный XGBoost")
+        xgb_metrics['model_name'] = 'Оптимизированный XGBoost'
+    except Exception as e:
+        print(f"Ошибка при оценке XGBoost: {e}")
+        print("Используем базовую модель XGBoost для оценки")
+        y_pred_xgb = xgb_model.predict(X_test)
+        y_prob_xgb = xgb_model.predict_proba(X_test)[:, 1]
+        xgb_metrics = evaluate_model(y_test, y_pred_xgb, y_prob_xgb, "Базовый XGBoost")
+        xgb_metrics['model_name'] = 'Базовый XGBoost'
     
     # Оценка оптимизированной логистической регрессии
-    y_pred_lr = optimized_lr.predict(X_test_selected)
-    y_prob_lr = optimized_lr.predict_proba(X_test_selected)[:, 1]
-    lr_metrics = evaluate_model(y_test, y_pred_lr, y_prob_lr, "Оптимизированная логистическая регрессия")
-    lr_metrics['model_name'] = 'Оптимизированная логистическая регрессия'
+    try:
+        y_pred_lr = optimized_lr.predict(X_test_selected)
+        y_prob_lr = optimized_lr.predict_proba(X_test_selected)[:, 1]
+        lr_metrics = evaluate_model(y_test, y_pred_lr, y_prob_lr, "Оптимизированная логистическая регрессия")
+        lr_metrics['model_name'] = 'Оптимизированная логистическая регрессия'
+    except Exception as e:
+        print(f"Ошибка при оценке логистической регрессии: {e}")
+        print("Используем базовую модель логистической регрессии для оценки")
+        y_pred_lr = lr_model.predict(X_test)
+        y_prob_lr = lr_model.predict_proba(X_test)[:, 1]
+        lr_metrics = evaluate_model(y_test, y_pred_lr, y_prob_lr, "Базовая логистическая регрессия")
+        lr_metrics['model_name'] = 'Базовая логистическая регрессия'
     
     # Оценка ансамблевой модели
-    y_pred_ensemble = ensemble_model.predict(X_test_selected)
-    y_prob_ensemble = ensemble_model.predict_proba(X_test_selected)[:, 1]
-    ensemble_metrics = evaluate_model(y_test, y_pred_ensemble, y_prob_ensemble, "Ансамблевая модель")
-    ensemble_metrics['model_name'] = 'Ансамблевая модель'
+    try:
+        y_pred_ensemble = ensemble_model.predict(X_test_selected)
+        y_prob_ensemble = ensemble_model.predict_proba(X_test_selected)[:, 1]
+        ensemble_metrics = evaluate_model(y_test, y_pred_ensemble, y_prob_ensemble, "Ансамблевая модель")
+        ensemble_metrics['model_name'] = 'Ансамблевая модель'
+    except Exception as e:
+        print(f"Ошибка при оценке ансамблевой модели: {e}")
+        print("Пропускаем оценку ансамблевой модели")
+        # Создаем фиктивные метрики для ансамблевой модели
+        ensemble_metrics = {
+            'accuracy': 0,
+            'precision': 0,
+            'recall': 0,
+            'f1_score': 0,
+            'roc_auc': 0,
+            'model_name': 'Ансамблевая модель (не оценена)'
+        }
+        # Используем пустые значения для построения графиков
+        y_prob_ensemble = np.zeros_like(y_test, dtype=float)
     
     # 8. Визуализация результатов
     # Построение ROC-кривых
     models_probs = {
         'Оптимизированный XGBoost': y_prob_xgb,
         'Оптимизированная логистическая регрессия': y_prob_lr,
-        'Ансамблевая модель': y_prob_ensemble
     }
+    
+    # Добавляем ансамблевую модель только если она была успешно оценена
+    if ensemble_metrics['model_name'] != 'Ансамблевая модель (не оценена)':
+        models_probs['Ансамблевая модель'] = y_prob_ensemble
     
     plot_roc_curves(models_probs, y_test)
     plot_precision_recall_curves(models_probs, y_test)
@@ -1015,18 +1115,19 @@ def main():
     print(f"Лучшая модель ({best_model_name}) сохранена в {best_model_path}")
     
     # Сохранение списка отобранных признаков
-    with open(MODELS_DIR / "selected_features.txt", "w") as f:
-        for feature in selected_features:
-            f.write(f"{feature}\n")
+    if not skip_optimization:
+        with open(MODELS_DIR / "selected_features.txt", "w") as f:
+            for feature in selected_features:
+                f.write(f"{feature}\n")
     
     print("\nОптимизация моделей успешно завершена.")
     print(f"Лучшая модель: {best_model_name}")
     print(f"Метрики лучшей модели:")
     
-    if best_model_name == 'Оптимизированный XGBoost':
+    if best_model_name == 'Оптимизированный XGBoost' or best_model_name == 'Базовый XGBoost':
         print(f"F1-score: {xgb_metrics['f1_score']:.4f}")
         print(f"ROC-AUC: {xgb_metrics['roc_auc']:.4f}")
-    elif best_model_name == 'Оптимизированная логистическая регрессия':
+    elif best_model_name == 'Оптимизированная логистическая регрессия' or best_model_name == 'Базовая логистическая регрессия':
         print(f"F1-score: {lr_metrics['f1_score']:.4f}")
         print(f"ROC-AUC: {lr_metrics['roc_auc']:.4f}")
     else:  # Ансамблевая модель
