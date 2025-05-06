@@ -9,10 +9,8 @@ services:
       - FLASK_HOST=0.0.0.0
       - FLASK_PORT=5000
       - FLASK_DEBUG=false
-      # Секретный ключ для генерации подписанных сессий (в продакшн следует использовать настоящий секретный ключ)
-      - SECRET_KEY=${SECRET_KEY:-default_secret_key_change_me}
-      # Уникальный путь доступа к приложению (в продакшн следует изменить это значение)
-      - APP_PATH_KEY=${APP_PATH_KEY:-secure_path}
+      - SECRET_KEY=2e7c1a9b8f4d6c3e5a1b7d2c9f0e8a4b  # безопасный случайный ключ
+      - APP_PATH_KEY=churn-7f3a2b1c  # уникальный путь доступа
     volumes:
       - ./models:/app/models
     networks:

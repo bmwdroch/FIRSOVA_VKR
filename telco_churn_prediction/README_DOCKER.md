@@ -16,25 +16,19 @@
 
 ## Подготовка к развертыванию
 
-1. Создайте файл `.env` на основе примера ниже:
+1. Откройте файл `docker-compose.yml` и задайте значения переменных окружения прямо в секции `environment:` сервиса `app`:
 
-```
-# Секретный ключ для Flask (используйте сильный случайный ключ)
-SECRET_KEY=your_strong_secret_key_here
-
-# Уникальный путь для доступа к приложению (используйте сложный для подбора путь)
-APP_PATH_KEY=your_secure_random_path
-
-# Настройки Flask
-FLASK_DEBUG=false
+```yaml
+    environment:
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5000
+      - FLASK_DEBUG=false
+      - SECRET_KEY=2e7c1a9b8f4d6c3e5a1b7d2c9f0e8a4b  # безопасный случайный ключ
+      - APP_PATH_KEY=churn-7f3a2b1c  # уникальный путь доступа
 ```
 
-Обязательно замените `your_strong_secret_key_here` и `your_secure_random_path` на свои уникальные значения. 
-Для генерации случайного ключа можно использовать команду:
-
-```bash
-openssl rand -hex 16
-```
+- **SECRET_KEY** — используйте уникальный случайный ключ (можно сгенерировать через `openssl rand -hex 16`)
+- **APP_PATH_KEY** — задайте уникальный путь (например, `churn-7f3a2b1c`)
 
 ## Запуск приложения
 
@@ -67,10 +61,10 @@ docker-compose ps
 Приложение будет доступно по адресу:
 
 ```
-http://ваш_ip_или_домен/your_secure_random_path
+http://ваш_ip_или_домен/churn-7f3a2b1c
 ```
 
-где `your_secure_random_path` - это значение переменной APP_PATH_KEY, которое вы указали в файле `.env`.
+где `churn-7f3a2b1c` — это значение переменной APP_PATH_KEY из `docker-compose.yml`.
 
 ## Настройка SSL (HTTPS)
 
