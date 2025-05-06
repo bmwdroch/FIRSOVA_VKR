@@ -213,6 +213,7 @@
                     </div>
 
                     <div class="d-grid gap-2">
+                        <button type="button" id="fill-preset" class="btn btn-secondary btn-lg mb-3">Заполнить тестовыми данными</button>
                         <button type="submit" class="btn btn-primary btn-lg">Получить прогноз</button>
                     </div>
                 </form>
@@ -289,6 +290,38 @@
         
         tenureInput.addEventListener('change', updateTotalCharges);
         monthlyChargesInput.addEventListener('change', updateTotalCharges);
+
+        // Добавление функциональности кнопки пресета
+        document.getElementById('fill-preset').addEventListener('click', function() {
+            // Демографические данные
+            document.getElementById('gender').value = 'Male';
+            document.getElementById('SeniorCitizen').value = 'No';
+            document.getElementById('Partner').value = 'Yes';
+            document.getElementById('Dependents').value = 'Yes';
+            
+            // Данные об услугах
+            document.getElementById('tenure').value = '10';
+            document.getElementById('PhoneService').value = 'Yes';
+            document.getElementById('MultipleLines').value = 'No';
+            document.getElementById('InternetService').value = 'Fiber optic';
+            document.getElementById('OnlineSecurity').value = 'No';
+            document.getElementById('OnlineBackup').value = 'Yes';
+            document.getElementById('DeviceProtection').value = 'No';
+            document.getElementById('TechSupport').value = 'Yes';
+            document.getElementById('StreamingTV').value = 'No';
+            document.getElementById('StreamingMovies').value = 'Yes';
+            
+            // Данные о контракте
+            document.getElementById('Contract').value = 'Month-to-month';
+            document.getElementById('PaperlessBilling').value = 'Yes';
+            document.getElementById('PaymentMethod').value = 'Credit card (automatic)';
+            document.getElementById('MonthlyCharges').value = '10.0';
+            document.getElementById('TotalCharges').value = '10.0';
+            
+            // Запускаем обработчики изменений для обновления зависимых полей
+            phoneServiceSelect.dispatchEvent(new Event('change'));
+            internetServiceSelect.dispatchEvent(new Event('change'));
+        });
     });
 </script>
 {% endblock %} 

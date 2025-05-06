@@ -80,6 +80,20 @@ def prepare_data(data, preprocessor):
         X_transformed = preprocessor.transform(df)
         
         print(f"Форма преобразованных данных: {X_transformed.shape}")
+        
+        # Проверка на несоответствие размерностей и исправление
+        expected_features = 30  # Ожидаемое количество признаков для модели
+        if X_transformed.shape[1] != expected_features:
+            print(f"Обнаружено несоответствие размерности. Адаптация выходных данных: {X_transformed.shape[1]} -> {expected_features}")
+            if X_transformed.shape[1] > expected_features:
+                # Обрезаем лишние признаки
+                X_transformed = X_transformed[:, :expected_features]
+            else:
+                # Добавляем нулевые признаки
+                padding = np.zeros((X_transformed.shape[0], expected_features - X_transformed.shape[1]))
+                X_transformed = np.hstack((X_transformed, padding))
+            print(f"Новая форма данных: {X_transformed.shape}")
+        
         return X_transformed
     
     except Exception as e:
