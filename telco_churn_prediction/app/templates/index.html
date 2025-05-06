@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+
+{% block title %}Прогнозирование оттока клиентов | Ввод данных{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">Ввод данных клиента</h3>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Заполните форму данными о клиенте для прогнозирования вероятности его оттока. Все поля обязательны для заполнения.</p>
+                
+                <form action="/predict" method="post" id="churn-form">
+                    <!-- Демографические данные -->
+                    <div class="form-section">
+                        <h4>Демографические данные</h4>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="gender" class="form-label">Пол клиента</label>
+                                <select class="form-select" id="gender" name="gender" required>
+                                    <option value="" selected disabled>Выберите пол</option>
+                                    {% for option in gender_options %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="SeniorCitizen" class="form-label">Пожилой гражданин</label>
+                                <select class="form-select" id="SeniorCitizen" name="SeniorCitizen" required>
+                                    <option value="" selected disabled>Выберите значение</option>
+                                    {% for option in yes_no_options %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="Partner" class="form-label">Наличие партнера</label>
+                                <select class="form-select" id="Partner" name="Partner" required>
+                                    <option value="" selected disabled>Выберите значение</option>
+                                    {% for option in yes_no_options %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="Dependents" class="form-label">Наличие иждивенцев</label>
+                                <select class="form-select" id="Dependents" name="Dependents" required>
+                                    <option value="" selected disabled>Выберите значение</option>
+                                    {% for option in yes_no_options %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Данные об услугах -->
+                    <div class="form-section">
+                        <h4>Данные об услугах</h4>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="tenure" class="form-label">Срок обслуживания (месяцы)</label>
+                                <input type="number" class="form-control" id="tenure" name="tenure" min="0" max="120" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="PhoneService" class="form-label">Телефонные услуги</label>
+                                <select class="form-select" id="PhoneService" name="PhoneService" required>
+                                    <option value="" selected disabled>Выберите значение</option>
+                                    {% for option in yes_no_options %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="MultipleLines" class="form-label">Несколько телефонных линий</label>
+                                <select class="form-select" id="MultipleLines" name="MultipleLines" required>
+                                    <option value="" selected disabled>Выберите значение</option>
+                                    {% for option in multiple_lines_options %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="InternetService" class="form-label">Интернет-услуга</label>
+                                <select class="form-select" id="InternetService" name="InternetService" required>
+                                    <option value="" selected disabled>Выберите значение</option>
+                                    {% for option in internet_service_options %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Дополнительные интернет-услуги -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="OnlineSecurity" class="form-label">Онлайн-безопасность</label>
+                                <select class="form-select" id="OnlineSecurity" name="OnlineSecurity" required>
+                                    <option value="" selected disabled>Выберите значение</option>
+                                    {% for option in internet_service_addons_options %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="OnlineBackup" class="form-label">Онлайн-резервное копирование</label>
+                                <select class="form-select" id="OnlineBackup" name="OnlineBackup" required>
+                                    <option value="" selected disabled>Выберите значение</option>
+                                    {% for option in internet_service_addons_options %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="DeviceProtection" class="form-label">Защита устройства</label>
+                                <select class="form-select" id="DeviceProtection" name="DeviceProtection" required>
+                                    <option value="" selected disabled>Выберите значение</option>
+                                    {% for option in internet_service_addons_options %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="TechSupport" class="form-label">Техническая поддержка</label>
+                                <select class="form-select" id="TechSupport" name="TechSupport" required>
+                                    <option value="" selected disabled>Выберите значение</option>
+                                    {% for option in internet_service_addons_options %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="StreamingTV" class="form-label">Потоковое ТВ</label>
+                                <select class="form-select" id="StreamingTV" name="StreamingTV" required>
+                                    <option value="" selected disabled>Выберите значение</option>
+                                    {% for option in internet_service_addons_options %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="StreamingMovies" class="form-label">Потоковое видео</label>
+                                <select class="form-select" id="StreamingMovies" name="StreamingMovies" required>
+                                    <option value="" selected disabled>Выберите значение</option>
+                                    {% for option in internet_service_addons_options %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Данные о контракте -->
+                    <div class="form-section">
+                        <h4>Данные о контракте</h4>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="Contract" class="form-label">Тип контракта</label>
+                                <select class="form-select" id="Contract" name="Contract" required>
+                                    <option value="" selected disabled>Выберите значение</option>
+                                    {% for option in contract_options %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="PaperlessBilling" class="form-label">Безбумажный расчет</label>
+                                <select class="form-select" id="PaperlessBilling" name="PaperlessBilling" required>
+                                    <option value="" selected disabled>Выберите значение</option>
+                                    {% for option in yes_no_options %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="PaymentMethod" class="form-label">Способ оплаты</label>
+                                <select class="form-select" id="PaymentMethod" name="PaymentMethod" required>
+                                    <option value="" selected disabled>Выберите значение</option>
+                                    {% for option in payment_method_options %}
+                                    <option value="{{ option }}">{{ option }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="MonthlyCharges" class="form-label">Ежемесячная плата</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="MonthlyCharges" name="MonthlyCharges" min="0" step="0.01" required>
+                                    <span class="input-group-text">$</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="TotalCharges" class="form-label">Общие расходы</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="TotalCharges" name="TotalCharges" min="0" step="0.01" required>
+                                    <span class="input-group-text">$</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">Получить прогноз</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Логика для отключения полей в зависимости от выбранных услуг
+    document.addEventListener('DOMContentLoaded', function() {
+        const phoneServiceSelect = document.getElementById('PhoneService');
+        const multipleLinesSelect = document.getElementById('MultipleLines');
+        const internetServiceSelect = document.getElementById('InternetService');
+        const internetAddons = [
+            'OnlineSecurity', 'OnlineBackup', 'DeviceProtection', 
+            'TechSupport', 'StreamingTV', 'StreamingMovies'
+        ];
+        
+        // Функция для управления зависимыми полями
+        function updateFormFields() {
+            // Управление полем MultipleLines в зависимости от PhoneService
+            if (phoneServiceSelect.value === 'No') {
+                multipleLinesSelect.value = 'No phone service';
+                multipleLinesSelect.disabled = true;
+            } else {
+                multipleLinesSelect.disabled = false;
+                if (multipleLinesSelect.value === 'No phone service') {
+                    multipleLinesSelect.value = '';
+                }
+            }
+            
+            // Управление полями интернет-услуг в зависимости от InternetService
+            if (internetServiceSelect.value === 'No') {
+                internetAddons.forEach(addonId => {
+                    const addonSelect = document.getElementById(addonId);
+                    addonSelect.value = 'No internet service';
+                    addonSelect.disabled = true;
+                });
+            } else {
+                internetAddons.forEach(addonId => {
+                    const addonSelect = document.getElementById(addonId);
+                    addonSelect.disabled = false;
+                    if (addonSelect.value === 'No internet service') {
+                        addonSelect.value = '';
+                    }
+                });
+            }
+        }
+        
+        // Добавление обработчиков событий
+        phoneServiceSelect.addEventListener('change', updateFormFields);
+        internetServiceSelect.addEventListener('change', updateFormFields);
+        
+        // Инициализация состояния формы
+        updateFormFields();
+
+        // Автоматический расчет TotalCharges при изменении tenure и MonthlyCharges
+        const tenureInput = document.getElementById('tenure');
+        const monthlyChargesInput = document.getElementById('MonthlyCharges');
+        const totalChargesInput = document.getElementById('TotalCharges');
+        
+        function updateTotalCharges() {
+            const tenure = parseFloat(tenureInput.value) || 0;
+            const monthlyCharges = parseFloat(monthlyChargesInput.value) || 0;
+            
+            if (tenure > 0 && monthlyCharges > 0) {
+                const total = tenure * monthlyCharges;
+                totalChargesInput.value = total.toFixed(2);
+            }
+        }
+        
+        tenureInput.addEventListener('change', updateTotalCharges);
+        monthlyChargesInput.addEventListener('change', updateTotalCharges);
+    });
+</script>
+{% endblock %} 
