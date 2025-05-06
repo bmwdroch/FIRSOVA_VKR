@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: telco_churn_app
+    restart: always
+    environment:
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5000
+      - FLASK_DEBUG=false
+      # Секретный ключ для генерации подписанных сессий (в продакшн следует использовать настоящий секретный ключ)
+      - SECRET_KEY=${SECRET_KEY:-default_secret_key_change_me}
+      # Уникальный путь доступа к приложению (в продакшн следует изменить это значение)
+      - APP_PATH_KEY=${APP_PATH_KEY:-secure_path}
+    volumes:
+      - ./models:/app/models
+    networks:
+      - app_network
+  
+  nginx:
+    image: nginx:stable-alpine
+    container_name: telco_churn_nginx
+    restart: always
+    ports:
+      - "80:80"
+      # Раскомментируйте следующую строку, если вы настроили SSL
+      # - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      # Раскомментируйте следующие строки, если вы настроили SSL
+      # - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - app
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge 
